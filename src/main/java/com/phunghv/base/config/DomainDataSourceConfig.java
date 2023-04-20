@@ -2,8 +2,6 @@ package com.phunghv.base.config;
 
 
 import com.phunghv.base.persistent.domain.BaseEntity;
-import java.util.Properties;
-import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.dialect.MySQL5Dialect;
@@ -14,10 +12,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import javax.sql.DataSource;
+import java.util.Properties;
 
 @Configuration
 @Slf4j
@@ -27,9 +29,9 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
         transactionManagerRef = "domainTransactionManager")
 public class DomainDataSourceConfig {
 
+    private final DBConfigDataFactory dbConfigDataFactory;
     @Autowired
     private Environment env;
-    private final DBConfigDataFactory dbConfigDataFactory;
 
     @Bean(name = "domainDataSource")
     public DataSource domainDataSource() {
@@ -39,10 +41,10 @@ public class DomainDataSourceConfig {
     }
 
     @Bean(name = "domainTransactionManager")
-    public DataSourceTransactionManager domainTransactionManager(@Qualifier("domainDataSource") DataSource dataSource) {
-        DataSourceTransactionManager txManager = new DataSourceTransactionManager();
-        txManager.setDataSource(dataSource);
-        return txManager;
+    public PlatformTransactionManager domainTransactionManager(@Qualifier("domainDataSource") DataSource dataSource) {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(domainEntityManagerFactoryBean(dataSource).getObject());
+        return transactionManager;
     }
 
     @Autowired
